@@ -3,195 +3,308 @@
 #include <random>
 #include <vector>
 #include <fstream>
+#include <cstdlib>
+#include<cmath>
 
 using namespace std; 
 
-Table::Table(int size, float p_demon) {
-    arr = new int* [size];
-    s = size;
-    demon = p_demon;
+//-----------------------------------------------------
+//constructor
+//-----------------------------------------------------
+Table::Table(int sizeX, int sizeY, float p_demon) {
+    sX= sizeX;
+    sY = sizeX;
+    arr = new int* [sizeX];
+    demon = testDemon= p_demon;
     histDemon.push_back(demon);
     if (arr) {
-        for (int i = 0; i < size; i++) {
-            arr[i] = new int[size];
+        for (int i = 0; i < sizeX; i++) {
+            arr[i] = new int[sizeY];
         }
     }
-
-    for (int i = 0; i < size; i++) {
-        for (int j = 0; j < size; j++) {
-            /*if((i+j)%2==0) arr[i][j] = -1;
-            else arr[i][j] = 1;*/
+    for (int i = 0; i < sizeX; i++) {
+        for (int j = 0; j < sizeY; j++) {
        arr[i][j] = 1;
         }
     }
-    calcJ();
+    testJ = J = -1 *(sizeX * sizeY * 2);
+    maxDemon = demon;    
 }
+
+//-----------------------------------------------------
+//test function to check if optimalised method is correct
+//-----------------------------------------------------
 
 void Table::calcJ() {
     int temp = 0;
-   // cout << "start: " << temp <<"\n";
-    for (int j = 0; j < s; j++) {
-        for (int i= 0; i < s; i++) {
-            if (j == s-1 && i == 0) {
-                temp += -1 * (arr[i][j] * arr[s - 1][j] + arr[i][j] * arr[0][0]);
-               // cout << "step róg: " << temp << "\n";
+    for (int j = 0; j < sY; j++) {
+        for (int i= 0; i < sX; i++) {
+            if (j == sY-1 && i == 0) {
+                temp += -1 * (arr[i][j] * arr[sX - 1][j] + arr[i][j] * arr[0][0]);
             }
             else if (i == 0) {
-                temp += -1 *(arr[i][j] * arr[s - 1][j] + arr[i][j] * arr[i][j + 1]);
-               // cout << "step i==0: " << temp << "\n";
+                temp += -1 *(arr[i][j] * arr[sX - 1][j] + arr[i][j] * arr[i][j + 1]);
             }
-            else if (j == s - 1) {
+            else if (j == sY - 1) {
                 temp += -1 * (arr[i][j] *  arr[i - 1][j] + arr[i][j] * arr[i][0]);
-               // cout << "step: j koniec" << temp << "\n";
             }
             else {
                 temp += -1 * (arr[i][j] * arr[i - 1][j] + arr[i][j] * arr[i][j + 1]);
-              //  cout << "step: else " << temp << "\n";
             }
             
         }
     }
-    J = temp;
+    testJ = temp;
+
 }
+
+//-----------------------------------------------------
+//show the array
+//-----------------------------------------------------
+
 void Table::show() {
-    for (int i = 0; i < s; i++) {
-        for (int j = 0; j < s; j++) {
+    for (int i = 0; i < sX; i++) {
+        for (int j = 0; j < sY; j++) {
             cout<< arr[i][j]<<" ";
         }
         cout << "\n";
     }
 }
-void Table::changeJ(int x, int y) {
 
+//-----------------------------------------------------
+//func to randomly choose and change spin -> change demon and array energy
+//-----------------------------------------------------
+
+void Table::changeJ() {
+
+    int x, y;
+    error = 0;
     random_device rd;
-    uniform_int_distribution<int> dist(0, s-1);
+    uniform_int_distribution<int> distX(0, sX-1);
+    uniform_int_distribution<int> distY(0, sY - 1);
     int change;
-    if (x >= s && y >= s) {
-        x = dist(rd);
-        y = dist(rd);
-    }
 
-    //temp += -1 * (arr[i][j] * arr[i - 1][j] + arr[i][j] * arr[i][j + 1]);
-    // 
-    cout << "x i y: " << x << " " << y << "\n";
+    x = distX(rd);
+    y = distY(rd);
 
-    if (y == s - 1 && x == 0) {
-        if (arr[s - 1][y] == -1 && arr[x][0] == -1) change = 0;
-        else if (arr[s - 1][y] == -1 || arr[x][0] == -1) change = 4;
-        else change = 8;
-    }
-    else if (x == 0) {
-        if (arr[s-1][y] == -1 && arr[x][y + 1] == -1) change = 0;
-        else if (arr[s-1][y] == -1 || arr[x][y + 1] == -1) change = 4;
-        else change = 8;
-    }
-    else if (y == s - 1) {  
-        if (arr[x - 1][y] == -1 && arr[x][0] == -1) change = 0;
-        else if (arr[x - 1][y] == -1 || arr[x][0] == -1) change = 4;
-        else change = 8;
-    }
-    else {
-        if (arr[x - 1][y] == -1 && arr[x][y + 1] == -1) change = 0;
-        else if (arr[x - 1][y] == -1 || arr[x][y + 1] == -1) change = 4;
-        else change = 8;
-    }
-  //  cout << "i: " << x << ", j: " <<y << "\n";
     arr[x][y] *= -1;
+    int how=0;
 
-    //cout << diff << "\n";
-    if (arr[x][y]==1) { // new energy is lower, demon inscrease energy 
-        //cout << prevJ << " - " << J << " demon increase energy \n";
-        demon += change;
-        J -= change;
+    int xR= (x == sX-1) ? 0 : x+1;
+    int yD= (y == sY -1) ? 0 : y+1;
+    int xL = (x ==0) ? sX-1 : x-1;
+    int yU = (y ==0) ? sY-1 : y-1;
+    if (arr[xR][y] == -1) how++;
+    if (arr[xL][y] == -1) how++;
+    if (arr[x][yU] == -1) how++;
+    if (arr[x][yD] == -1) how++;
+
+    if (how == 2) {
+        change = 0;
+        histDemon.push_back(demon);
+        
     }
-    else { // new energy higher, demon lose energy
-       // cout << prevJ << " - " << J << " demon loose energy \n";
-       // cout << demon << " <demonE, " << diff << "zmiana \n";
-        if (demon - change>=0) {
+    else if (how == 4) {
+        change = 8;
+        if (arr[x][y] == 1) {
+            if (demon - change >= 0) {
+                demon -= change;
+                J += change;
+                histDemon.push_back(demon);
+            }
+            else {
+                arr[x][y] *= -1;
+                error = 1;
+            }
+        }
+        else {
+            demon += change;
+            J -= change;
+            histDemon.push_back(demon);
+        }
+        
+    }
+    else if (how == 3) {
+        change = 4;
+        if (arr[x][y] == 1) {
+        if (demon - change >= 0) {
             demon -= change;
             J += change;
+            histDemon.push_back(demon);
+        }
+        else {
+            arr[x][y] *= -1;
+            error = 1;
+        }
+    }
+        else {
+            demon += change;
+            J -= change;
+            histDemon.push_back(demon);
+        }
+    }
+    else if (how == 1) {
+        change = 4;
+       
+        
+        if (arr[x][y] == 1) {
+            demon += change;
+            J -= change;
+            histDemon.push_back(demon);
            
         }
         else {
-         //   cout << "no! ho doesnt have energy! \n";
-            arr[x][y] *= -1;
-            
+            if (demon - change >= 0) {
+                demon -= change;
+                J += change;
+                histDemon.push_back(demon);
+            }
+            else {
+                arr[x][y] *= -1;
+                error = 1;
+            }
         }
- 
     }
-    histDemon.push_back(demon);
+    else if (how == 0) {
+        change = 8;
+        if (arr[x][y] == 1) {
+            demon += change;
+            J -= change;
+            histDemon.push_back(demon);
+
+        }
+        else {
+            if (demon - change >= 0) {
+                demon -= change;
+                J += change;
+
+                histDemon.push_back(demon);
+            }
+            else {
+                arr[x][y] *= -1;
+                error = 1;
+            }
+        }
+
+    }
+
+ 
 }
 
-void Table:: histogram() {
-    fstream plik;
-    float a, b, Sxy = 0, Sx = 0, Sy = 0, Sxx = 0, Syy = 0, srX, srY, sigmaX = 0, sigmaY=0;
+//-----------------------------------------------------
+//function to analyse taken data - make histogram and calculate temperature
+//-----------------------------------------------------
+void Table::analyse() {
+    ofstream plik;
+    plik.open("histogram.txt");
+    float a, b, x=0, Sxy = 0, Sx = 0, Sy = 0, Sxx = 0, Syy = 0, srX, srY, sigmaX = 0, sigmaY = 0, srXY = 0, Sx2 = 0, Sy2 = 0, srSx2 = 0, srSy2 = 0, X=0, Y=0;
     int n = histDemon.size();
-    plik.open("time.txt", ios::out | ios::app);
     int iter = 0;
-    int arr[100000] = { 0 };
+    int* arrH = new int[maxDemon+1];
     vector <int> temp;
+    vector <int> temp2 = histDemon;
     temp = histDemon;
-    while (!histDemon.empty())
+   
+    for (int i = 0; i <= maxDemon; i++) {
+        
+        arrH[i] = 0;
+       
+    }
+    //calculate stable phase
+    calcStab();
+    //save demon energy in time to file
+    //DemonToFile();
+    stab *= 200;
+    //make histogram
+    for (int i = 0; i < (histDemon.size()- stab); i++)
     {
-        arr[histDemon.back()]++;
+        arrH[histDemon.back()]++;
         histDemon.pop_back();
     }
-    
-    if (plik.good() == true)
-    {
-        plik << temp.size() << " J x TIME \n";
-        
-        for (int i = 0; i < temp.size(); i++) {
-            plik << temp[i];
-           /* for (int j = 0; j < temp[i]; j++) {
-                plik << "*";
-            }*/
-            plik << "\n";
-        }
-        plik.close();
+   // save histogram to file
+    int range = 0;
+   for (int i=0;i<maxDemon;i++) {
+       if (arrH[i] != 0) {
+           range++;
+           plik << i << " " << arrH[i] << "\n";
+           Sx += i;
+           Sy += log(arrH[i]);
+           Sxx += (i ) * (i);
+           Sxy += log(arrH[i]) * (i);
+       }
     }
 
-
-    for (int i = 0; i <= 100000; i++) {
-        
-        if(arr[i]>0){
-            //wyniki
-        cout << i << ": ";
-        if (i < 10) cout << "  ";
-        else if(i<100) cout << " ";
-        for (int j = 0; j < arr[i]; j++) {
-            cout << "*";
-        }
-        cout << "\n";
-        //obliczenia
-        Sx += i;
-        Sy += arr[i];
-        Sxx += i * i;
-        Syy += arr[i]*arr[i];
-        Sxy += arr[i] * i;
-        iter++;
-        }
+        a = (range * Sxy - Sx * Sy) / (range * Sxx - Sx * Sx);
+        a *= -1;
+        T = ( 1) / a;
+        histDemon.clear();
+        MtoFile();
+        delete[] arrH;
     }
 
-    srX = Sx / iter;
-    srY = Sy / iter;
-    for (int i = 0; i <= 100000; i++) {
-        if (arr[i] > 0) {
-            sigmaX += pow((i - srX), 2);
-            sigmaY += pow((arr[i] - srY), 2);
+//-----------------------------------------------------
+//calculate magnetism
+//-----------------------------------------------------
+void Table::calcM() {
+        float m = 0;
+        for (int i = 0; i < sX; i++) {
+            for (int j = 0; j < sY; j++) {
+                m+=arr[i][j];
+            }
         }
-    }
-    sigmaX /= n;
-    sigmaY /= n;
-    sigmaX = sqrt(sigmaX);
-    sigmaY = sqrt(sigmaY);
-    cout << " sigma X i Y: " << sigmaX << " " << sigmaY << "\n";
-    cout << Sxy << " jezus\n";
-    cout << Sx * Sy << " jezus\n";
-    float r = (Sxy - (Sx * Sy)) / sigmaX * sigmaY;
-    cout << "wspolczynnik korelacji: " << r << "\n";
+        M = m / float(sX * sY);
+        vM.push_back(M);
 }
-
-void Table::sSum() {
-  
+//-----------------------------------------------------
+//save magnetism x time to file
+//-----------------------------------------------------
+void Table::MtoFile() {
+    ofstream plik3;
+    plik3.open("MxCzas.txt");
+    for (int i = 0; i < vM.size(); i++) {
+        plik3 << i << " " << vM[i] << "\n";
+    }
+    vM.clear();
+}
+//-----------------------------------------------------
+//save demon energy x time
+//-----------------------------------------------------
+void Table::DemonToFile() {
+    ofstream plik2;
+    plik2.open("Jtime.txt");
+    for (int i = 0; i < histDemon.size(); i++) {
+        plik2 << i << " " << histDemon[i] << "\n";
+    }
+    plik2.close();
+}
+//-----------------------------------------------------
+//calc stable phase
+//-----------------------------------------------------
+void Table::calcStab() {
+    int range = histDemon.size() / 200;
+    int x, set;
+    float srx=0, x2, war;
+    float prev = INTMAX_MAX;
+    for (int i = 0; i < range; i++) {
+        war = 0;
+        set = i * 200;
+        srx = 0;
+        for (int j = 0; j < 200; j++) {
+            srx += histDemon[set+ j];
+        }
+        srx /= 200;
+        for (int j = 0; j < 200; j++) {
+            float in = histDemon[set + j] - srx;
+            war += pow(in, 2);
+        }
+        war /= 200;
+        if (war > prev) {
+            stab = i;
+            break;
+        }
+        else {
+            prev = war;
+        }
+    }
+    
 }

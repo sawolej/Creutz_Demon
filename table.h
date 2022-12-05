@@ -7,22 +7,37 @@ using namespace std;
 
 class Table {
 private:
-	int s;
+	int sX;
+	int sY;
 	int** arr;
-	int minJ;
+	
 
 
 public:
 	vector <int> histDemon;
+	vector <float> vM;
 	int demon;
+	int testDemon;
 	int J;
-	Table(int size, float p_demon);
-	void calcJ();
-	void changeJ(int x = 666, int y = 666);
-	void show();
-	void histogram();
-	void sSum();
+	int testJ;
+	int maxDemon;
+	float M;
+	float T;
+	int iter;
+	float A;
+	bool error;
+	int stab;
 
+
+	Table(int sizeX, int sizeY, float p_demon);
+	void calcJ();
+	void changeJ();
+	void show();
+	void analyse();
+	void calcM();
+	void MtoFile();
+	void DemonToFile();
+	void calcStab();
 };
 
 #endif // !TABLE_H
